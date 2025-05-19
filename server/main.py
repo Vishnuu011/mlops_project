@@ -1,4 +1,4 @@
-from server.app import (
+from app import (
     DataIngestionConfig,
     DataIngestionArtifact,
     DataTransformationConfig,
@@ -6,7 +6,7 @@ from server.app import (
     DataIngestionMethod,
     DataTransformationMethod
 )
-from server.app import *
+from app import *
 
 
 class TrainingPipeline:
