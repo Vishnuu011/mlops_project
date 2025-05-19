@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np   
 import pickle
 
+import io
+from contextlib import redirect_stdout
+
 from sklearn.linear_model import (
     Ridge,
     Lasso, 
@@ -104,7 +107,7 @@ def load_numpy_array_data(file_path: str) -> np.array:
         raise  e
     
 
-DATA_PATH="data\powerconsumption.csv"
+DATA_PATH=r"C:\Users\HP\Desktop\data\powerconsumption.csv"
 ARTIFACT="artifact"
 RAW_CSV="raw.csv"
 TRAIN= "train.csv"
@@ -679,19 +682,31 @@ def predict_datapoint():
         logger.error(f"An Error Occured In : {e}")
         raise e
     
+
+
 @app.route("/train", methods=['GET'])
 def train_model():
     try:
-        pipeline = main.TrainingPipeline()
-        artifact = pipeline.run_pipeline()
+        buffer = io.StringIO()
+
+        with redirect_stdout(buffer):
+            pipeline = main.TrainingPipeline()
+            artifact = pipeline.run_pipeline()
+            print("\n✅ Training completed.")
+
+        logs = buffer.getvalue()
+
         return jsonify({
             "status": "success",
             "message": "Training completed successfully",
-            "model_path": artifact.model_path if hasattr(artifact, 'model_path') else "N/A"
+            "model_path": getattr(artifact, 'model_path', "N/A"),
+            "logs": logs
         }), 200
+
     except Exception as e:
         logger.error(f"An Error Occured In Training: {e}")
-        return jsonify({"error": str(e)}), 500    
-
+        return jsonify({"error": str(e)}), 500
+    
+    
 if __name__ == '__main__':
     app.run(debug=True, port=5000)    

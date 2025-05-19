@@ -40,9 +40,12 @@ if st.button("🛠️ Start Training Engine"):
         try:
             train_response = requests.get("http://localhost:5000/train")
             if train_response.status_code == 200:
-                msg = train_response.json().get("message")
-                st.success(f"✅ {msg}")
-                st.write("📁 Model saved at:", train_response.json().get("model_path"))
+                result = train_response.json()
+                st.success(f"✅ {result.get('message')}")
+                st.write("📁 Model saved at:", result.get("model_path"))
+                
+                # Show logs in a text area
+                st.text_area("📜 Training Logs", result.get("logs"), height=400)
             else:
                 st.error("❌ Training failed.")
         except requests.exceptions.ConnectionError:
