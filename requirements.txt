@@ -3,3 +3,9 @@ pandas
 scikit-learn
 matplotlib
 seaborn
+mlflow
+dagshub
+lightgbm
+streamlit
+Flask
+xgboost
