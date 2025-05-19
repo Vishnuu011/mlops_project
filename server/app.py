@@ -29,7 +29,7 @@ from sklearn.metrics import (
     mean_squared_error,
     r2_score
 )
-import main
+from server.pipeline.main import TrainingPipeline
 
 
 import dagshub
@@ -690,7 +690,7 @@ def train_model():
         buffer = io.StringIO()
 
         with redirect_stdout(buffer):
-            pipeline = main.TrainingPipeline()
+            pipeline = TrainingPipeline()
             artifact = pipeline.run_pipeline()
             print("\n✅ Training completed.")
 
@@ -707,6 +707,6 @@ def train_model():
         logger.error(f"An Error Occured In Training: {e}")
         return jsonify({"error": str(e)}), 500
     
-    
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)    
