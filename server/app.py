@@ -2,7 +2,12 @@ import pandas as pd
 import numpy as np   
 import pickle
 
+
+import queue
+import time
 import io
+import subprocess
+import threading
 from contextlib import redirect_stdout
 
 from sklearn.linear_model import (
@@ -46,10 +51,14 @@ from xgboost import XGBRegressor
 from flask import (
     Flask,
     request,
-    jsonify
+    jsonify,
+    Response, 
+    stream_with_context
 )
 
-app=Flask(__name__)
+from flask_cors import CORS
+app = Flask(__name__)
+CORS(app)
 
 logging.basicConfig(filename="newfile.log",
                     format='%(asctime)s %(message)s',
@@ -712,20 +721,26 @@ class TrainingPipeline:
             logger.error(f"An Error Occured In : {e}")
             raise e           
 
-    def run_pipeline(self):
-
+    def run_pipeline_yield_logs(self):
         try:
-            data_ingestion_artifact=self.strat_data_ingestion()
-            data_transformation_artifact=self.strat_data_Transformation(
-                data_ingestion_artifact=data_ingestion_artifact
-            )
-            model_artifact =self.strat_model_trainer(
-                data_trasformation_artifact=data_transformation_artifact
-            )
-            return model_artifact
+            yield "✅ Starting Data Ingestion..."
+            data_ingestion_artifact = self.strat_data_ingestion()
+            yield "✅ Data Ingestion Completed."
+
+            yield "✅ Starting Data Transformation..."
+            data_transformation_artifact = self.strat_data_Transformation(data_ingestion_artifact)
+            yield "✅ Data Transformation Completed."
+
+            yield "✅ Starting Model Training..."
+            model_artifact = self.strat_model_trainer(data_transformation_artifact)
+            yield "✅ Model Training Completed."
+
+            yield f"🎯 Model saved at: {getattr(model_artifact, 'model_path', 'N/A')}"
+
         except Exception as e:
-            logger.error(f"An Error Occured In : {e}")
-            raise e         
+            error_message = f"❌ Error: {str(e)}"
+            logger.error(error_message)
+            yield error_message     
         
 
 @app.route("/predict", methods=['POST'])
@@ -750,31 +765,19 @@ def predict_datapoint():
         logger.error(f"An Error Occured In : {e}")
         raise e
     
-
-
-@app.route("/train", methods=['GET'])
-def train_model():
-    try:
-        buffer = io.StringIO()
-
-        with redirect_stdout(buffer):
-            pipeline = TrainingPipeline()
-            artifact = pipeline.run_pipeline()
-            print("\n✅ Training completed.")
-
-        logs = buffer.getvalue()
-
-        return jsonify({
-            "status": "success",
-            "message": "Training completed successfully",
-            "model_path": getattr(artifact, 'model_path', "N/A"),
-            "logs": logs
-        }), 200
-
-    except Exception as e:
-        logger.error(f"An Error Occured In Training: {e}")
-        return jsonify({"error": str(e)}), 500
     
+
+
+@app.route("/train", methods=["GET"])
+def train_model():
+    def generate():
+        pipeline = TrainingPipeline()
+        for log in pipeline.run_pipeline_yield_logs():
+            yield log + "\n"
+    
+    return Response(stream_with_context(generate()), mimetype='text/plain')
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)    
