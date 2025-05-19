@@ -29,7 +29,8 @@ from sklearn.metrics import (
     mean_squared_error,
     r2_score
 )
-from server.pipeline.main import TrainingPipeline
+from pipeline.main import TrainingPipeline  
+
 
 
 import dagshub
