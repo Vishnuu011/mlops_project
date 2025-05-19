@@ -29,7 +29,7 @@ from sklearn.metrics import (
     mean_squared_error,
     r2_score
 )
-from main import TrainingPipeline  
+
 
 
 
